@@ -1,0 +1,13 @@
+username: alice
+password: 123
+email: alice@gmail.com
+
+
+username: bob
+password: 1234
+email: bob@gmail.com
+
+
+username: kvn
+password: 123
+email: kvn
