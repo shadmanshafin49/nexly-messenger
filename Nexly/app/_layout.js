@@ -5,9 +5,12 @@ import { View, StyleSheet, Platform, useWindowDimensions } from "react-native";
 function WebPhoneFrame({ children }) {
   const { width, height } = useWindowDimensions();
 
+  if (!width || !height) {
+    return <View style={styles.webOuter}>{children}</View>;
+  }
+
   const frameHeight = height;
   const frameWidth = frameHeight * (9 / 16);
-
   const finalWidth = frameWidth > width ? width : frameWidth;
   const finalHeight = finalWidth * (16 / 9);
 

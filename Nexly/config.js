@@ -13,4 +13,4 @@ const IP = Platform.OS === "android"
     ? BACKEND_IP_IOS
     : BACKEND_IP_REAL;
 
-export const BASE_URL = `http://nexly-messenger-production.up.railway.app`;
+export const BASE_URL = "https://nexly-messenger-production.up.railway.app";
