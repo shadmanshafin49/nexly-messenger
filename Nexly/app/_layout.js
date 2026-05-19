@@ -1,6 +1,7 @@
 import "../global.css";
 import { Stack } from "expo-router";
 import { View, StyleSheet, Platform, useWindowDimensions } from "react-native";
+import { ThemeProvider } from "../context/ThemeContext";
 
 function WebPhoneFrame({ children }) {
   const { width, height } = useWindowDimensions();
@@ -24,7 +25,11 @@ function WebPhoneFrame({ children }) {
 }
 
 export default function RootLayout() {
-  const stack = <Stack screenOptions={{ headerShown: false }} />;
+  const stack = (
+    <ThemeProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </ThemeProvider>
+  );
 
   if (Platform.OS === "web") {
     return <WebPhoneFrame>{stack}</WebPhoneFrame>;

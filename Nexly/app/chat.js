@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -15,10 +15,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { io } from "socket.io-client";
 import * as ImagePicker from "expo-image-picker";
 import { BASE_URL } from "../config";
+import { useTheme } from "../context/ThemeContext";
 
 export default function ChatScreen() {
   const { username, fname, friend, friendFname } = useLocalSearchParams();
   const router = useRouter();
+
+  const { theme } = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
@@ -104,15 +108,9 @@ export default function ChatScreen() {
       const res = await fetch(`${BASE_URL}/api/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sender: username,
-          receiver: friend,
-          content: text,
-        }),
+        body: JSON.stringify({ sender: username, receiver: friend, content: text }),
       });
-
       const data = await res.json();
-
       if (data?._id) {
         setMessages((prev) => [...prev, data]);
         setText("");
@@ -162,9 +160,7 @@ export default function ChatScreen() {
         body: formData,
       });
       const data = await res.json();
-      if (data?._id) {
-        setMessages((prev) => [...prev, data]);
-      }
+      if (data?._id) setMessages((prev) => [...prev, data]);
     } catch (err) {
       console.error("Image send error:", err);
     }
@@ -174,7 +170,6 @@ export default function ChatScreen() {
     const now = Date.now();
     const id = item._id;
     const last = lastTapRef.current[id] ?? 0;
-
     if (now - last < 300) {
       lastTapRef.current[id] = 0;
       toggleLove(item);
@@ -185,18 +180,11 @@ export default function ChatScreen() {
 
   const toggleLove = async (item) => {
     const newLoved = !item.loved;
-
     setMessages((prev) =>
       prev.map((m) => (m._id === item._id ? { ...m, loved: newLoved } : m))
     );
-
     const target = item.sender === username ? item.receiver : item.sender;
-    socketRef.current?.emit("message_reaction", {
-      messageId: item._id,
-      loved: newLoved,
-      to: target,
-    });
-
+    socketRef.current?.emit("message_reaction", { messageId: item._id, loved: newLoved, to: target });
     try {
       await fetch(`${BASE_URL}/api/messages/${item._id}/react`, {
         method: "PATCH",
@@ -216,10 +204,8 @@ export default function ChatScreen() {
       date.getDate() === now.getDate() &&
       date.getMonth() === now.getMonth() &&
       date.getFullYear() === now.getFullYear();
-
     const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     if (isToday) return time;
-
     const isThisYear = date.getFullYear() === now.getFullYear();
     const dateStr = date.toLocaleDateString([], {
       month: "short",
@@ -250,19 +236,15 @@ export default function ChatScreen() {
         <Pressable onPress={() => handleDoubleTap(item)} style={styles.pressable}>
           <View style={[styles.messageBubble, isMe ? styles.myMessage : styles.theirMessage]}>
             {item.type === "image" ? (
-              <Image
-                source={{ uri: item.imageUrl }}
-                style={styles.chatImage}
-                resizeMode="cover"
-              />
+              <Image source={{ uri: item.imageUrl }} style={styles.chatImage} resizeMode="cover" />
             ) : (
-              <Text style={[styles.messageText, isMe && { color: "white" }]}>
+              <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.theirMessageText]}>
                 {item.content}
               </Text>
             )}
             <View style={[styles.metaRow, isMe ? styles.metaRight : styles.metaLeft]}>
               {isMe && <StatusIcon status={item.status} />}
-              <Text style={[styles.timestamp, isMe && styles.timestampMine]}>
+              <Text selectable={false} style={[styles.timestamp, isMe && styles.timestampMine]}>
                 {formatTime(item.createdAt)}
               </Text>
             </View>
@@ -322,6 +304,7 @@ export default function ChatScreen() {
         <TextInput
           style={styles.input}
           placeholder="Type a message"
+          placeholderTextColor={theme.placeholder}
           value={text}
           onChangeText={handleTextChange}
           onSubmitEditing={sendMessage}
@@ -335,8 +318,8 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8f8f8" },
+const makeStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bg },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -352,32 +335,27 @@ const styles = StyleSheet.create({
   myWrapper: { alignItems: "flex-end" },
   theirWrapper: { alignItems: "flex-start" },
   pressable: { maxWidth: "75%" },
-  messageBubble: {
-    padding: 10,
-    borderRadius: 18,
-  },
+  messageBubble: { padding: 10, borderRadius: 18 },
   myMessage: { backgroundColor: "#007AFF" },
-  theirMessage: { backgroundColor: "#e5e5ea" },
-  messageText: { fontSize: 15, color: "black" },
-  chatImage: {
-    width: 180,
-    height: 180,
-    borderRadius: 12,
-  },
+  theirMessage: { backgroundColor: theme.theirBubble },
+  myMessageText: { fontSize: 15, color: "white" },
+  theirMessageText: { fontSize: 15, color: theme.theirBubbleText },
+  messageText: { fontSize: 15, color: theme.theirBubbleText },
+  chatImage: { width: 180, height: 180, borderRadius: 12 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
   metaRight: { justifyContent: "flex-end" },
   metaLeft: { justifyContent: "flex-start" },
-  timestamp: { fontSize: 11, color: "rgba(0,0,0,0.4)" },
+  timestamp: { fontSize: 11, color: theme.subtext },
   timestampMine: { color: "rgba(255,255,255,0.6)" },
   reactionBadge: {
     position: "absolute",
     bottom: -12,
-    backgroundColor: "white",
+    backgroundColor: theme.surface,
     borderRadius: 10,
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: theme.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -387,29 +365,24 @@ const styles = StyleSheet.create({
   reactionRight: { right: 6 },
   reactionLeft: { left: 6 },
   reactionEmoji: { fontSize: 12 },
-  typingContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 4,
-  },
-  typingText: {
-    color: "#888",
-    fontSize: 13,
-    fontStyle: "italic",
-  },
+  typingContainer: { paddingHorizontal: 16, paddingBottom: 4 },
+  typingText: { color: theme.subtext, fontSize: 13, fontStyle: "italic" },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     padding: 10,
     borderTopWidth: 1,
-    borderColor: "#ddd",
-    backgroundColor: "white",
+    borderColor: theme.border,
+    backgroundColor: theme.surface,
   },
   input: {
     flex: 1,
     padding: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: theme.inputBorder,
+    backgroundColor: theme.inputBg,
+    color: theme.text,
     marginHorizontal: 10,
   },
   sendBtn: {
@@ -418,7 +391,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 20,
   },
-  imageBtn: {
-    padding: 5,
-  },
+  imageBtn: { padding: 5 },
 });

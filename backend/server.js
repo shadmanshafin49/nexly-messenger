@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import createMessageRoutes from "./routes/messageRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import createSpaceRoutes from "./routes/spaceRoutes.js";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use(express.json());
 
 app.use("/api/messages", createMessageRoutes(io));
 app.use("/api/users", userRoutes);
+app.use("/api/spaces", createSpaceRoutes(io));
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -62,6 +64,10 @@ io.on("connection", (socket) => {
     socket.username = username;
     socket.join(username);
     console.log(`${username} joined room`);
+  });
+
+  socket.on("join_space", (spaceId) => {
+    socket.join(`space:${spaceId}`);
   });
 
   socket.on("disconnect", () => {
