@@ -204,95 +204,149 @@ export default function SpaceChatScreen() {
           returnKeyType="send"
           multiline
         />
-        <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
-          <Ionicons name="send" size={18} color="white" />
+        <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} activeOpacity={0.85}>
+          <Ionicons name="send" size={16} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const makeStyles = (theme) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.bg },
+const makeStyles = (theme) => {
+  const cardShadow = {
+    shadowColor: theme.shadowColor,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: theme.dark ? 0.8 : 1,
+    shadowRadius: 0,
+    elevation: 4,
+  };
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#007AFF",
-    paddingTop: 50,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-  },
-  backBtn: { marginRight: 10, padding: 4 },
-  backArrow: { color: "white", fontSize: 22 },
-  headerText: { flex: 1 },
-  headerTitle: { color: "white", fontSize: 17, fontWeight: "bold" },
-  headerSub: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 1 },
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.bg },
 
-  chatContainer: { padding: 10 },
-  bubbleWrapper: { marginVertical: 3 },
-  bubbleWrapperLoved: { marginBottom: 14 },
-  myWrapper: { alignItems: "flex-end" },
-  theirWrapper: { alignItems: "flex-start" },
-  pressable: { maxWidth: "75%" },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      paddingTop: 50,
+      paddingBottom: 12,
+      paddingHorizontal: 16,
+      borderBottomWidth: 2,
+      borderBottomColor: theme.cardBorder,
+      gap: 10,
+    },
+    backBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.bg,
+      justifyContent: "center",
+      alignItems: "center",
+      ...cardShadow,
+    },
+    backArrow: { fontSize: 18, color: theme.text, fontWeight: "700" },
+    headerText: { flex: 1 },
+    headerTitle: { fontSize: 17, fontWeight: "800", color: theme.text },
+    headerSub: {
+      fontSize: 12,
+      color: theme.subtext,
+      marginTop: 1,
+      fontWeight: "500",
+    },
 
-  senderName: { fontSize: 12, fontWeight: "600", color: "#007AFF", marginBottom: 2, marginLeft: 4 },
+    chatContainer: { paddingHorizontal: 14, paddingVertical: 10 },
 
-  messageBubble: { padding: 10, borderRadius: 18 },
-  myMessage: { backgroundColor: "#007AFF" },
-  theirMessage: { backgroundColor: theme.theirBubble },
-  myMessageText: { fontSize: 15, color: "white" },
-  theirMessageText: { fontSize: 15, color: theme.theirBubbleText },
-  messageText: { fontSize: 15 },
+    bubbleWrapper: { marginVertical: 4 },
+    bubbleWrapperLoved: { marginBottom: 18 },
+    myWrapper: { alignItems: "flex-end" },
+    theirWrapper: { alignItems: "flex-start" },
+    pressable: { maxWidth: "78%" },
 
-  timestamp: { fontSize: 11, color: theme.subtext, marginTop: 3, textAlign: "right" },
-  timestampMine: { color: "rgba(255,255,255,0.6)" },
+    senderName: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: theme.primary,
+      marginBottom: 3,
+      marginLeft: 4,
+    },
 
-  reactionBadge: {
-    position: "absolute",
-    bottom: -12,
-    backgroundColor: theme.surface,
-    borderRadius: 10,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderWidth: 1,
-    borderColor: theme.border,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  reactionRight: { right: 6 },
-  reactionLeft: { left: 6 },
-  reactionEmoji: { fontSize: 12 },
+    messageBubble: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18 },
+    myMessage: {
+      backgroundColor: theme.primary,
+      borderBottomRightRadius: 4,
+    },
+    theirMessage: {
+      backgroundColor: theme.theirBubble,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      borderBottomLeftRadius: 4,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 3, height: 3 },
+      shadowOpacity: theme.dark ? 0.8 : 1,
+      shadowRadius: 0,
+      elevation: 3,
+    },
 
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
-  },
-  input: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: theme.inputBorder,
-    backgroundColor: theme.inputBg,
-    color: theme.text,
-    marginRight: 8,
-    maxHeight: 100,
-    fontSize: 15,
-  },
-  sendBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
+    myMessageText: { fontSize: 15, color: "#FFFFFF", lineHeight: 21 },
+    theirMessageText: { fontSize: 15, color: theme.theirBubbleText, lineHeight: 21 },
+    messageText: { fontSize: 15, lineHeight: 21 },
+
+    timestamp: { fontSize: 11, color: theme.subtext, marginTop: 4, textAlign: "right" },
+    timestampMine: { color: "rgba(255,255,255,0.55)" },
+
+    reactionBadge: {
+      position: "absolute",
+      bottom: -14,
+      backgroundColor: theme.surface,
+      borderRadius: 10,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 2, height: 2 },
+      shadowOpacity: theme.dark ? 0.8 : 1,
+      shadowRadius: 0,
+      elevation: 2,
+    },
+    reactionRight: { right: 6 },
+    reactionLeft: { left: 6 },
+    reactionEmoji: { fontSize: 13 },
+
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderTopWidth: 2,
+      borderTopColor: theme.cardBorder,
+      backgroundColor: theme.surface,
+      gap: 8,
+    },
+    input: {
+      flex: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: theme.inputBorder,
+      backgroundColor: theme.inputBg,
+      color: theme.text,
+      fontSize: 15,
+      maxHeight: 100,
+    },
+    sendBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.primary,
+      justifyContent: "center",
+      alignItems: "center",
+      ...cardShadow,
+    },
+  });
+};

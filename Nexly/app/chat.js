@@ -114,8 +114,6 @@ export default function ChatScreen() {
       if (data?._id) {
         setMessages((prev) => [...prev, data]);
         setText("");
-      } else {
-        console.error("Send message error:", data);
       }
     } catch (err) {
       console.error("Send message error:", err);
@@ -217,10 +215,10 @@ export default function ChatScreen() {
 
   const StatusIcon = ({ status }) => {
     if (status === "read")
-      return <Ionicons name="checkmark-done" size={13} color="#4FC3F7" />;
+      return <Ionicons name="checkmark-done" size={13} color="#FAF7F0" />;
     if (status === "delivered")
-      return <Ionicons name="checkmark-done" size={13} color="rgba(255,255,255,0.6)" />;
-    return <Ionicons name="checkmark" size={13} color="rgba(255,255,255,0.6)" />;
+      return <Ionicons name="checkmark-done" size={13} color="rgba(255,255,255,0.55)" />;
+    return <Ionicons name="checkmark" size={13} color="rgba(255,255,255,0.55)" />;
   };
 
   const renderItem = ({ item }) => {
@@ -264,12 +262,27 @@ export default function ChatScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.canGoBack() ? router.back() : router.replace({ pathname: "/dashboard", params: { username, fname } })}
+          onPress={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace({ pathname: "/dashboard", params: { username, fname } })
+          }
           style={styles.backBtn}
         >
-          <Text style={{ color: "white", fontSize: 22 }}>←</Text>
+          <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{friendFname || friend}</Text>
+
+        <View style={styles.headerCenter}>
+          <View style={styles.headerAvatar}>
+            <Text style={styles.headerAvatarText}>
+              {(friendFname || friend)?.[0]?.toUpperCase() || "?"}
+            </Text>
+          </View>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {friendFname || friend}
+          </Text>
+        </View>
+
         <TouchableOpacity
           style={styles.callBtn}
           onPress={() =>
@@ -279,7 +292,7 @@ export default function ChatScreen() {
             })
           }
         >
-          <Ionicons name="call" size={22} color="white" />
+          <Ionicons name="call" size={18} color={theme.text} />
         </TouchableOpacity>
       </View>
 
@@ -293,17 +306,19 @@ export default function ChatScreen() {
 
       {friendTyping && (
         <View style={styles.typingContainer}>
-          <Text style={styles.typingText}>{friendFname || friend} is typing...</Text>
+          <View style={styles.typingBubble}>
+            <Text style={styles.typingText}>{friendFname || friend} is typing...</Text>
+          </View>
         </View>
       )}
 
       <View style={styles.inputContainer}>
         <TouchableOpacity style={styles.imageBtn} onPress={pickAndSendImage}>
-          <Text style={{ fontSize: 18 }}>📷</Text>
+          <Text style={{ fontSize: 20 }}>📷</Text>
         </TouchableOpacity>
         <TextInput
           style={styles.input}
-          placeholder="Type a message"
+          placeholder="Message..."
           placeholderTextColor={theme.placeholder}
           value={text}
           onChangeText={handleTextChange}
@@ -311,85 +326,194 @@ export default function ChatScreen() {
           returnKeyType="send"
         />
         <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
-          <Text style={{ color: "white" }}>Send</Text>
+          <Ionicons name="send" size={16} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const makeStyles = (theme) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.bg },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#007AFF",
-    padding: 15,
-  },
-  backBtn: { marginRight: 10, padding: 6 },
-  headerTitle: { color: "white", fontSize: 18, fontWeight: "bold", flex: 1 },
-  callBtn: { padding: 4 },
-  chatContainer: { padding: 10 },
-  bubbleWrapper: { marginVertical: 3 },
-  bubbleWrapperLoved: { marginBottom: 14 },
-  myWrapper: { alignItems: "flex-end" },
-  theirWrapper: { alignItems: "flex-start" },
-  pressable: { maxWidth: "75%" },
-  messageBubble: { padding: 10, borderRadius: 18 },
-  myMessage: { backgroundColor: "#007AFF" },
-  theirMessage: { backgroundColor: theme.theirBubble },
-  myMessageText: { fontSize: 15, color: "white" },
-  theirMessageText: { fontSize: 15, color: theme.theirBubbleText },
-  messageText: { fontSize: 15, color: theme.theirBubbleText },
-  chatImage: { width: 180, height: 180, borderRadius: 12 },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
-  metaRight: { justifyContent: "flex-end" },
-  metaLeft: { justifyContent: "flex-start" },
-  timestamp: { fontSize: 11, color: theme.subtext },
-  timestampMine: { color: "rgba(255,255,255,0.6)" },
-  reactionBadge: {
-    position: "absolute",
-    bottom: -12,
-    backgroundColor: theme.surface,
-    borderRadius: 10,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderWidth: 1,
-    borderColor: theme.border,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  reactionRight: { right: 6 },
-  reactionLeft: { left: 6 },
-  reactionEmoji: { fontSize: 12 },
-  typingContainer: { paddingHorizontal: 16, paddingBottom: 4 },
-  typingText: { color: theme.subtext, fontSize: 13, fontStyle: "italic" },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
-  },
-  input: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: theme.inputBorder,
-    backgroundColor: theme.inputBg,
-    color: theme.text,
-    marginHorizontal: 10,
-  },
-  sendBtn: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-  },
-  imageBtn: { padding: 5 },
-});
+const makeStyles = (theme) => {
+  const cardShadow = {
+    shadowColor: theme.shadowColor,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: theme.dark ? 0.8 : 1,
+    shadowRadius: 0,
+    elevation: 4,
+  };
+
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.bg },
+
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      paddingTop: 50,
+      paddingBottom: 12,
+      paddingHorizontal: 16,
+      borderBottomWidth: 2,
+      borderBottomColor: theme.cardBorder,
+      gap: 10,
+    },
+    backBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.bg,
+      justifyContent: "center",
+      alignItems: "center",
+      ...cardShadow,
+    },
+    backArrow: { fontSize: 18, color: theme.text, fontWeight: "700" },
+
+    headerCenter: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+    headerAvatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: theme.primary,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    headerAvatarText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
+    headerTitle: { fontSize: 17, fontWeight: "800", color: theme.text, flex: 1 },
+
+    callBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.accent,
+      justifyContent: "center",
+      alignItems: "center",
+      ...cardShadow,
+    },
+
+    chatContainer: { paddingHorizontal: 14, paddingVertical: 10 },
+
+    bubbleWrapper: { marginVertical: 4 },
+    bubbleWrapperLoved: { marginBottom: 18 },
+    myWrapper: { alignItems: "flex-end" },
+    theirWrapper: { alignItems: "flex-start" },
+    pressable: { maxWidth: "78%" },
+
+    messageBubble: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18 },
+    myMessage: {
+      backgroundColor: theme.primary,
+      borderBottomRightRadius: 4,
+    },
+    theirMessage: {
+      backgroundColor: theme.theirBubble,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      borderBottomLeftRadius: 4,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 3, height: 3 },
+      shadowOpacity: theme.dark ? 0.8 : 1,
+      shadowRadius: 0,
+      elevation: 3,
+    },
+
+    myMessageText: { fontSize: 15, color: "#FFFFFF", lineHeight: 21 },
+    theirMessageText: { fontSize: 15, color: theme.theirBubbleText, lineHeight: 21 },
+    messageText: { fontSize: 15, lineHeight: 21 },
+
+    chatImage: { width: 190, height: 190, borderRadius: 12 },
+
+    metaRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
+    metaRight: { justifyContent: "flex-end" },
+    metaLeft: { justifyContent: "flex-start" },
+    timestamp: { fontSize: 11, color: theme.subtext },
+    timestampMine: { color: "rgba(255,255,255,0.55)" },
+
+    reactionBadge: {
+      position: "absolute",
+      bottom: -14,
+      backgroundColor: theme.surface,
+      borderRadius: 10,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 2, height: 2 },
+      shadowOpacity: theme.dark ? 0.8 : 1,
+      shadowRadius: 0,
+      elevation: 2,
+    },
+    reactionRight: { right: 6 },
+    reactionLeft: { left: 6 },
+    reactionEmoji: { fontSize: 13 },
+
+    typingContainer: { paddingHorizontal: 16, paddingBottom: 6 },
+    typingBubble: {
+      alignSelf: "flex-start",
+      backgroundColor: theme.theirBubble,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      borderRadius: 14,
+      borderBottomLeftRadius: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 2, height: 2 },
+      shadowOpacity: theme.dark ? 0.8 : 1,
+      shadowRadius: 0,
+      elevation: 2,
+    },
+    typingText: { color: theme.subtext, fontSize: 13, fontStyle: "italic" },
+
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderTopWidth: 2,
+      borderTopColor: theme.cardBorder,
+      backgroundColor: theme.surface,
+      gap: 8,
+    },
+    imageBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.bg,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    input: {
+      flex: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: theme.inputBorder,
+      backgroundColor: theme.inputBg,
+      color: theme.text,
+      fontSize: 15,
+    },
+    sendBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.primary,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 3, height: 3 },
+      shadowOpacity: theme.dark ? 0.8 : 1,
+      shadowRadius: 0,
+      elevation: 4,
+    },
+  });
+};

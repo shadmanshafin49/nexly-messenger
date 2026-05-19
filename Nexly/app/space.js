@@ -141,18 +141,30 @@ export default function SpaceScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.canGoBack() ? router.back() : router.replace({ pathname: "/dashboard", params: { username, fname, lname } })}
+          onPress={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace({ pathname: "/dashboard", params: { username, fname, lname } })
+          }
           style={styles.backBtn}
         >
           <Text style={styles.backArrow}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{displayName}</Text>
+        <View style={styles.headerCenter}>
+          <View style={styles.headerIcon}>
+            <Text style={{ fontSize: 16 }}>🌐</Text>
+          </View>
+          <Text style={styles.headerTitle} numberOfLines={1}>{displayName}</Text>
+        </View>
       </View>
 
+      {/* Members row */}
       {members.length > 0 && (
         <View style={styles.membersSection}>
+          <Text style={styles.membersLabel}>Members</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.membersScroll}>
             {members.map((m) => (
               <View key={m.username} style={styles.memberItem}>
@@ -166,16 +178,16 @@ export default function SpaceScreen() {
         </View>
       )}
 
-      <Text style={styles.sectionLabel}>Chats</Text>
+      <Text style={styles.sectionLabel}>Channels</Text>
 
       <FlatList
         data={chats}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.chatItem} onPress={() => openChat(item)}>
+          <TouchableOpacity style={styles.chatItem} onPress={() => openChat(item)} activeOpacity={0.8}>
             <View style={styles.chatIcon}>
-              <Ionicons name="chatbubbles-outline" size={22} color="#007AFF" />
+              <Text style={{ fontSize: 18 }}>#</Text>
             </View>
             <View style={styles.chatInfo}>
               <Text style={styles.chatName}>{item.name}</Text>
@@ -191,21 +203,26 @@ export default function SpaceScreen() {
           </TouchableOpacity>
         )}
         ListEmptyComponent={() => (
-          <Text style={styles.emptyText}>No chats yet. Tap + to create one.</Text>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyEmoji}>💬</Text>
+            <Text style={styles.emptyText}>No channels yet.</Text>
+            <Text style={styles.emptyHint}>Tap + to create one!</Text>
+          </View>
         )}
       />
 
-      <TouchableOpacity style={styles.fab} onPress={() => setNewChatVisible(true)}>
-        <Ionicons name="add" size={30} color="white" />
+      <TouchableOpacity style={styles.fab} onPress={() => setNewChatVisible(true)} activeOpacity={0.85}>
+        <Ionicons name="add" size={28} color="#1A1A1A" />
       </TouchableOpacity>
 
       <Modal visible={newChatVisible} transparent animationType="fade" onRequestClose={() => setNewChatVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>New Chat</Text>
+            <Text style={styles.modalTitle}>New Channel</Text>
+            <Text style={styles.modalLabel}>Channel Name</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Chat name (e.g. Weekend Plans)"
+              placeholder="e.g. Weekend Plans"
               placeholderTextColor={theme.placeholder}
               value={newChatName}
               onChangeText={setNewChatName}
@@ -224,8 +241,9 @@ export default function SpaceScreen() {
                 style={[styles.createBtn, (!newChatName.trim() || creatingChat) && styles.createBtnDisabled]}
                 onPress={handleCreateChat}
                 disabled={!newChatName.trim() || creatingChat}
+                activeOpacity={0.85}
               >
-                <Text style={styles.createBtnText}>{creatingChat ? "Creating..." : "Create"}</Text>
+                <Text style={styles.createBtnText}>{creatingChat ? "Creating..." : "Create →"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -235,115 +253,218 @@ export default function SpaceScreen() {
   );
 }
 
-const makeStyles = (theme) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.bg },
+const makeStyles = (theme) => {
+  const cardShadow = {
+    shadowColor: theme.shadowColor,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: theme.dark ? 0.8 : 1,
+    shadowRadius: 0,
+    elevation: 5,
+  };
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#007AFF",
-    paddingTop: 50,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-  },
-  backBtn: { marginRight: 10, padding: 4 },
-  backArrow: { color: "white", fontSize: 22 },
-  headerTitle: { color: "white", fontSize: 18, fontWeight: "bold", flex: 1 },
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.bg },
 
-  membersSection: {
-    backgroundColor: theme.surface,
-    borderBottomWidth: 1,
-    borderColor: theme.border,
-    paddingVertical: 12,
-  },
-  membersScroll: { paddingHorizontal: 16, gap: 16 },
-  memberItem: { alignItems: "center", width: 56 },
-  memberAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  memberAvatarText: { color: "white", fontSize: 18, fontWeight: "bold" },
-  memberName: { fontSize: 11, color: theme.subtext, width: 56, textAlign: "center" },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      paddingTop: 50,
+      paddingBottom: 12,
+      paddingHorizontal: 16,
+      borderBottomWidth: 2,
+      borderBottomColor: theme.cardBorder,
+      gap: 10,
+    },
+    backBtn: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.bg,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 3, height: 3 },
+      shadowOpacity: theme.dark ? 0.8 : 1,
+      shadowRadius: 0,
+      elevation: 4,
+    },
+    backArrow: { fontSize: 18, color: theme.text, fontWeight: "700" },
+    headerCenter: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+    headerIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.accent,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    headerTitle: { fontSize: 18, fontWeight: "800", color: theme.text, flex: 1 },
 
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: theme.sectionLabel,
-    marginTop: 16,
-    marginBottom: 4,
-    marginHorizontal: 16,
-  },
+    membersSection: {
+      backgroundColor: theme.surface,
+      borderBottomWidth: 2,
+      borderBottomColor: theme.cardBorder,
+      paddingVertical: 14,
+    },
+    membersLabel: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: theme.subtext,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 10,
+      paddingHorizontal: 16,
+    },
+    membersScroll: { paddingHorizontal: 16, gap: 14 },
+    memberItem: { alignItems: "center", width: 52 },
+    memberAvatar: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: theme.primary,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 5,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 2, height: 2 },
+      shadowOpacity: theme.dark ? 0.8 : 1,
+      shadowRadius: 0,
+      elevation: 3,
+    },
+    memberAvatarText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+    memberName: { fontSize: 11, color: theme.subtext, width: 52, textAlign: "center" },
 
-  listContent: { paddingHorizontal: 16, paddingBottom: 90 },
-  chatItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.surface,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: theme.dark ? 0 : 0.05,
-    shadowRadius: 4,
-    elevation: theme.dark ? 0 : 2,
-  },
-  chatIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.dark ? "#1a2a4a" : "#e8f0fe",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  chatInfo: { flex: 1 },
-  chatName: { fontSize: 16, fontWeight: "600", color: theme.text },
-  chatLatest: { fontSize: 13, color: theme.subtext, marginTop: 2 },
-  chatEmpty: { fontSize: 13, color: theme.placeholder, marginTop: 2, fontStyle: "italic" },
+    sectionLabel: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: theme.sectionLabel,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginTop: 18,
+      marginBottom: 8,
+      marginHorizontal: 16,
+    },
 
-  emptyText: { textAlign: "center", color: theme.subtext, marginTop: 40, fontSize: 14 },
+    listContent: { paddingHorizontal: 16, paddingBottom: 100 },
+    chatItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      paddingVertical: 14,
+      paddingHorizontal: 14,
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      marginBottom: 10,
+      ...cardShadow,
+    },
+    chatIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.chipBg,
+      justifyContent: "center",
+      alignItems: "center",
+      marginRight: 12,
+    },
+    chatInfo: { flex: 1 },
+    chatName: { fontSize: 16, fontWeight: "700", color: theme.text },
+    chatLatest: { fontSize: 13, color: theme.subtext, marginTop: 2 },
+    chatEmpty: { fontSize: 13, color: theme.placeholder, marginTop: 2, fontStyle: "italic" },
 
-  fab: {
-    position: "absolute",
-    bottom: 28,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007AFF",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
+    emptyContainer: { alignItems: "center", marginTop: 60 },
+    emptyEmoji: { fontSize: 40, marginBottom: 12 },
+    emptyText: { fontSize: 16, fontWeight: "700", color: theme.text, marginBottom: 4 },
+    emptyHint: { fontSize: 14, color: theme.subtext },
 
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center" },
-  modalBox: { width: "82%", backgroundColor: theme.surface, borderRadius: 16, padding: 24 },
-  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 16, color: theme.text },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: theme.inputBorder,
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    marginBottom: 20,
-    backgroundColor: theme.inputBg,
-    color: theme.text,
-  },
-  modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12 },
-  cancelBtn: { paddingVertical: 10, paddingHorizontal: 16 },
-  cancelText: { fontSize: 15, color: theme.subtext },
-  createBtn: { backgroundColor: "#007AFF", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
-  createBtnDisabled: { backgroundColor: "#a0c4ff" },
-  createBtnText: { color: "white", fontWeight: "600", fontSize: 15 },
-});
+    fab: {
+      position: "absolute",
+      bottom: 28,
+      right: 24,
+      width: 56,
+      height: 56,
+      borderRadius: 16,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.accent,
+      justifyContent: "center",
+      alignItems: "center",
+      ...cardShadow,
+    },
+
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    modalBox: {
+      width: "84%",
+      backgroundColor: theme.surface,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      padding: 24,
+      ...cardShadow,
+    },
+    modalTitle: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: theme.text,
+      marginBottom: 18,
+    },
+    modalLabel: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: theme.subtext,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 7,
+    },
+    modalInput: {
+      borderWidth: 2,
+      borderColor: theme.inputBorder,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 13,
+      fontSize: 15,
+      marginBottom: 22,
+      backgroundColor: theme.inputBg,
+      color: theme.text,
+    },
+    modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10 },
+    cancelBtn: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      backgroundColor: theme.bg,
+    },
+    cancelText: { fontSize: 15, fontWeight: "700", color: theme.subtext },
+    createBtn: {
+      backgroundColor: theme.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: theme.cardBorder,
+      shadowColor: theme.shadowColor,
+      shadowOffset: { width: 3, height: 3 },
+      shadowOpacity: theme.dark ? 0.8 : 1,
+      shadowRadius: 0,
+      elevation: 4,
+    },
+    createBtnDisabled: { opacity: 0.5 },
+    createBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
+  });
+};

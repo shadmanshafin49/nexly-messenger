@@ -91,6 +91,7 @@ export default function createMessageRoutes(io) {
       }).sort({ createdAt: -1 });
 
       const seen = {};
+      const unreadCounts = {};
       for (const msg of messages) {
         const partner = msg.sender === username ? msg.receiver : msg.sender;
         if (!seen[partner]) {
@@ -99,9 +100,15 @@ export default function createMessageRoutes(io) {
             latestMessage: msg.type === "image" ? "📷 Photo" : decrypt(msg.content),
             latestMessageAt: msg.createdAt,
             isMine: msg.sender === username,
-            unread: msg.sender !== username && msg.status !== "read",
           };
         }
+        if (msg.sender === partner && msg.receiver === username && msg.status !== "read") {
+          unreadCounts[partner] = (unreadCounts[partner] || 0) + 1;
+        }
+      }
+      for (const partner of Object.keys(seen)) {
+        seen[partner].unreadCount = unreadCounts[partner] || 0;
+        seen[partner].unread = seen[partner].unreadCount > 0;
       }
 
       const partners = Object.keys(seen);
