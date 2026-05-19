@@ -54,6 +54,10 @@ io.on("connection", (socket) => {
     socket.to(to).emit("call_end");
   });
 
+  socket.on("message_reaction", ({ to, messageId, loved }) => {
+    socket.to(to).emit("message_reaction", { messageId, loved });
+  });
+
   socket.on("join", (username) => {
     socket.username = username;
     socket.join(username);

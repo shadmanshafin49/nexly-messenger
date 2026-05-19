@@ -1,22 +1,81 @@
 import express from "express";
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
 import { encrypt, decrypt } from "../utils/cipher/athash.js";
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+const uploadToCloudinary = (buffer) =>
+  new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "nexly-chat" },
+      (error, result) => (error ? reject(error) : resolve(result))
+    );
+    stream.end(buffer);
+  });
+
 export default function createMessageRoutes(io) {
   const router = express.Router();
 
-  // Send a message
+  // Send a text message
   router.post("/", async (req, res) => {
     try {
       const { sender, receiver, content } = req.body;
       const msg = new Message({ sender, receiver, content: encrypt(content), status: "sent" });
       await msg.save();
 
-      const msgObj = { ...msg.toObject(), content }; // return plaintext to caller
+      const msgObj = { ...msg.toObject(), content };
       io.to(receiver).emit("receive_message", msgObj);
 
       res.status(201).json(msgObj);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Send an image message
+  router.post("/image", upload.single("image"), async (req, res) => {
+    try {
+      const { sender, receiver } = req.body;
+      const result = await uploadToCloudinary(req.file.buffer);
+
+      const msg = new Message({
+        sender,
+        receiver,
+        content: "",
+        type: "image",
+        imageUrl: result.secure_url,
+        status: "sent",
+      });
+      await msg.save();
+
+      const msgObj = msg.toObject();
+      io.to(receiver).emit("receive_message", msgObj);
+
+      res.status(201).json(msgObj);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Toggle love reaction on a message
+  router.patch("/:id/react", async (req, res) => {
+    try {
+      const { loved } = req.body;
+      const msg = await Message.findByIdAndUpdate(
+        req.params.id,
+        { loved },
+        { new: true }
+      );
+      res.json(msg);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -37,9 +96,10 @@ export default function createMessageRoutes(io) {
         if (!seen[partner]) {
           seen[partner] = {
             partnerUsername: partner,
-            latestMessage: decrypt(msg.content),
+            latestMessage: msg.type === "image" ? "📷 Photo" : decrypt(msg.content),
             latestMessageAt: msg.createdAt,
             isMine: msg.sender === username,
+            unread: msg.sender !== username && msg.status !== "read",
           };
         }
       }
@@ -75,7 +135,6 @@ export default function createMessageRoutes(io) {
         ],
       }).sort({ createdAt: 1 });
 
-      // Messages from user2 that user1 is now fetching → mark delivered
       const updated = await Message.updateMany(
         { sender: user2, receiver: user1, status: "sent" },
         { status: "delivered" }
@@ -89,7 +148,7 @@ export default function createMessageRoutes(io) {
           msg.sender === user2 && msg.receiver === user1 && msg.status === "sent";
         return {
           ...msg.toObject(),
-          content: decrypt(msg.content),
+          content: msg.type === "image" ? "" : decrypt(msg.content),
           status: justDelivered ? "delivered" : msg.status,
         };
       });

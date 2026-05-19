@@ -4,12 +4,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   FlatList,
+  Image,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { io } from "socket.io-client";
+import * as ImagePicker from "expo-image-picker";
 import { BASE_URL } from "../config";
 
 export default function ChatScreen() {
@@ -21,6 +25,7 @@ export default function ChatScreen() {
   const [friendTyping, setFriendTyping] = useState(false);
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const lastTapRef = useRef({});
 
   useEffect(() => {
     socketRef.current = io(BASE_URL);
@@ -33,7 +38,6 @@ export default function ChatScreen() {
       }
     });
 
-    // Friend read/received our messages → update their status in state
     socketRef.current.on("typing", () => setFriendTyping(true));
     socketRef.current.on("stop_typing", () => setFriendTyping(false));
 
@@ -45,6 +49,12 @@ export default function ChatScreen() {
           )
         );
       }
+    });
+
+    socketRef.current.on("message_reaction", ({ messageId, loved }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? { ...m, loved } : m))
+      );
     });
 
     if (username && friend) fetchMessages();
@@ -65,7 +75,6 @@ export default function ChatScreen() {
     }
   };
 
-  // Notify the backend (and friend via socket) that we've read their messages
   const markAsRead = async () => {
     try {
       await fetch(`${BASE_URL}/api/messages/read/${friend}/${username}`, {
@@ -115,6 +124,90 @@ export default function ChatScreen() {
     }
   };
 
+  const pickAndSendImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      alert("Allow photo access to send images.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+    });
+
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    const formData = new FormData();
+
+    if (Platform.OS === "web") {
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      formData.append("image", blob, asset.fileName || "photo.jpg");
+    } else {
+      formData.append("image", {
+        uri: asset.uri,
+        type: asset.mimeType || "image/jpeg",
+        name: asset.fileName || "photo.jpg",
+      });
+    }
+
+    formData.append("sender", username);
+    formData.append("receiver", friend);
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/messages/image`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data?._id) {
+        setMessages((prev) => [...prev, data]);
+      }
+    } catch (err) {
+      console.error("Image send error:", err);
+    }
+  };
+
+  const handleDoubleTap = (item) => {
+    const now = Date.now();
+    const id = item._id;
+    const last = lastTapRef.current[id] ?? 0;
+
+    if (now - last < 300) {
+      lastTapRef.current[id] = 0;
+      toggleLove(item);
+    } else {
+      lastTapRef.current[id] = now;
+    }
+  };
+
+  const toggleLove = async (item) => {
+    const newLoved = !item.loved;
+
+    setMessages((prev) =>
+      prev.map((m) => (m._id === item._id ? { ...m, loved: newLoved } : m))
+    );
+
+    const target = item.sender === username ? item.receiver : item.sender;
+    socketRef.current?.emit("message_reaction", {
+      messageId: item._id,
+      loved: newLoved,
+      to: target,
+    });
+
+    try {
+      await fetch(`${BASE_URL}/api/messages/${item._id}/react`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loved: newLoved }),
+      });
+    } catch (err) {
+      console.error("Reaction error:", err);
+    }
+  };
+
   const formatTime = (iso) => {
     if (!iso) return "";
     const date = new Date(iso);
@@ -147,18 +240,40 @@ export default function ChatScreen() {
   const renderItem = ({ item }) => {
     const isMe = item.sender === username;
     return (
-      <View style={[styles.bubbleWrapper, isMe ? styles.myWrapper : styles.theirWrapper]}>
-        <View style={[styles.messageBubble, isMe ? styles.myMessage : styles.theirMessage]}>
-          <Text style={[styles.messageText, isMe && { color: "white" }]}>
-            {item.content}
-          </Text>
-          <View style={[styles.metaRow, isMe ? styles.metaRight : styles.metaLeft]}>
-            {isMe && <StatusIcon status={item.status} />}
-            <Text style={[styles.timestamp, isMe && styles.timestampMine]}>
-              {formatTime(item.createdAt)}
-            </Text>
+      <View
+        style={[
+          styles.bubbleWrapper,
+          isMe ? styles.myWrapper : styles.theirWrapper,
+          item.loved && styles.bubbleWrapperLoved,
+        ]}
+      >
+        <Pressable onPress={() => handleDoubleTap(item)} style={styles.pressable}>
+          <View style={[styles.messageBubble, isMe ? styles.myMessage : styles.theirMessage]}>
+            {item.type === "image" ? (
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.chatImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={[styles.messageText, isMe && { color: "white" }]}>
+                {item.content}
+              </Text>
+            )}
+            <View style={[styles.metaRow, isMe ? styles.metaRight : styles.metaLeft]}>
+              {isMe && <StatusIcon status={item.status} />}
+              <Text style={[styles.timestamp, isMe && styles.timestampMine]}>
+                {formatTime(item.createdAt)}
+              </Text>
+            </View>
           </View>
-        </View>
+        </Pressable>
+
+        {item.loved && (
+          <View style={[styles.reactionBadge, isMe ? styles.reactionRight : styles.reactionLeft]}>
+            <Text style={styles.reactionEmoji}>❤️</Text>
+          </View>
+        )}
       </View>
     );
   };
@@ -166,7 +281,10 @@ export default function ChatScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.dismiss()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.canGoBack() ? router.back() : router.replace({ pathname: "/dashboard", params: { username, fname } })}
+          style={styles.backBtn}
+        >
           <Text style={{ color: "white", fontSize: 22 }}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{friendFname || friend}</Text>
@@ -198,7 +316,7 @@ export default function ChatScreen() {
       )}
 
       <View style={styles.inputContainer}>
-        <TouchableOpacity style={styles.imageBtn}>
+        <TouchableOpacity style={styles.imageBtn} onPress={pickAndSendImage}>
           <Text style={{ fontSize: 18 }}>📷</Text>
         </TouchableOpacity>
         <TextInput
@@ -230,21 +348,45 @@ const styles = StyleSheet.create({
   callBtn: { padding: 4 },
   chatContainer: { padding: 10 },
   bubbleWrapper: { marginVertical: 3 },
+  bubbleWrapperLoved: { marginBottom: 14 },
   myWrapper: { alignItems: "flex-end" },
   theirWrapper: { alignItems: "flex-start" },
+  pressable: { maxWidth: "75%" },
   messageBubble: {
     padding: 10,
     borderRadius: 18,
-    maxWidth: "75%",
   },
   myMessage: { backgroundColor: "#007AFF" },
   theirMessage: { backgroundColor: "#e5e5ea" },
   messageText: { fontSize: 15, color: "black" },
+  chatImage: {
+    width: 180,
+    height: 180,
+    borderRadius: 12,
+  },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 3 },
   metaRight: { justifyContent: "flex-end" },
   metaLeft: { justifyContent: "flex-start" },
   timestamp: { fontSize: 11, color: "rgba(0,0,0,0.4)" },
   timestampMine: { color: "rgba(255,255,255,0.6)" },
+  reactionBadge: {
+    position: "absolute",
+    bottom: -12,
+    backgroundColor: "white",
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderColor: "#eee",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  reactionRight: { right: 6 },
+  reactionLeft: { left: 6 },
+  reactionEmoji: { fontSize: 12 },
   typingContainer: {
     paddingHorizontal: 16,
     paddingBottom: 4,

@@ -94,3 +94,64 @@
   - Returns `""` if field is absent
 - Timestamp displayed inside each bubble alongside status icon (my messages) or alone (their messages)
 - Timestamp color: faded white on blue bubbles, faded dark on gray bubbles
+
+---
+
+## [0.9.0] — Web UI & Polish
+
+- Created `Nexly/app/_layout.js` as the Expo Router root layout with a Stack navigator
+- On web, all screens are wrapped in a centered 9:16 phone frame against a dark background; scales to fit viewport; native unaffected
+- Created `Nexly/global.css` — hides scrollbars globally across all browsers (Firefox, Chrome/Safari, IE/Edge); imported once in `_layout.js`
+- Chat `FlatList` switched to `inverted` with reversed data — newest messages always pinned to bottom on open, no programmatic scrolling needed
+- Chat back button: `router.canGoBack() ? router.back() : router.replace('/dashboard')` — handles both normal flow and direct URL/page refresh on web
+
+---
+
+## [0.10.0] — Message Reactions
+
+- Double-tap any message within 300ms to toggle a ❤️ love reaction
+- Optimistic UI update on both sender and receiver via `message_reaction` socket event
+- Backend: added `PATCH /api/messages/:id/react` — toggles `loved` boolean on the message document
+- Backend `server.js`: added `message_reaction` socket relay event
+- `Message` model: added `loved` field (`Boolean`, default `false`)
+- ❤️ badge rendered at the bottom corner of the bubble (WhatsApp-style, `position: absolute`)
+
+---
+
+## [0.11.0] — Photo Sending & Receiving
+
+- Installed `expo-image-picker` (frontend) and `cloudinary`, `multer` (backend)
+- `Message` model updated: added `type` (`"text"` | `"image"`), `imageUrl`; `content` made optional
+- Backend: `POST /api/messages/image` — multer memory storage → Cloudinary upload → message saved and emitted via `receive_message` socket event
+- Conversations route: image messages show `"📷 Photo"` as latest message preview
+- Frontend: 📷 button opens media library; handles web (blob URI) and native (file URI) separately; uploads as `multipart/form-data`
+- Image messages rendered as 180×180 rounded frames inside chat bubbles
+- Requires Cloudinary env vars on Railway: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+
+---
+
+## [0.12.0] — Dashboard Real-Time & Unread Indicators
+
+- Dashboard socket now listens for `receive_message` and calls `fetchConversations` immediately — conversation list updates in real time without leaving the screen
+- Backend conversations response includes `unread: true` when the latest message is from the partner and has not been read
+- Unread conversations display bold name and bold message preview in the dashboard list
+- Long sent messages alignment fixed: moved `maxWidth: "75%"` from the inner bubble `View` to the `Pressable` wrapper so the percentage resolves against the full-width FlatList cell instead of the content's intrinsic width
+
+---
+
+## [0.13.0] — Animated Side Menu & Settings Screen
+
+- Hamburger menu replaced with an animated slide-in drawer using `Animated.timing` — opens in 250ms, closes in 200ms with a callback to unmount the modal after the animation completes
+- `openMenu` / `closeMenu` helpers manage animation state; logout now calls `closeMenu` before showing the Alert
+- Dashboard layout restructured: outer `root` View wraps both the main content and the overlay so the drawer slides over content without shifting layout
+- `TouchableWithoutFeedback` backdrop closes the menu on outside tap
+- New screen `app/settings.js` — placeholder Settings page with a back button that uses `router.canGoBack()` for safe navigation from any entry point
+- Settings button in the hamburger menu navigates to `/settings`
+
+---
+
+## [0.14.0] — Git Repository Fix
+
+- Removed nested `.git` directory from `Nexly/` folder — it was incorrectly initialized as a standalone repo, causing Git to treat it as an unregistered submodule
+- Cleared the submodule gitlink entry (`mode 160000`) from the parent repo index via `git rm --cached Nexly`
+- Re-added all Nexly source files as regular tracked files in the parent repository

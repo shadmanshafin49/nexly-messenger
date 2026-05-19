@@ -15,7 +15,12 @@ Built with React Native (Expo) on the frontend and Node.js + Socket.IO + MongoDB
 - Typing indicators
 - Message timestamps
 - Basic message encryption (custom shift cipher before storing to MongoDB)
-- Voice calls via WebRTC — *code written, disabled until a native build is set up*
+- Voice calls (WebRTC) — requires an Expo dev build, not supported in Expo Go
+- Photo sending (Cloudinary)
+- Message reactions (double-tap to ❤️)
+- Animated slide-in side drawer with profile info, logout, and settings
+- Dashboard conversation list updates in real time
+- Unread message indicators
 
 ---
 
@@ -28,7 +33,8 @@ Built with React Native (Expo) on the frontend and Node.js + Socket.IO + MongoDB
 | Real-time | Socket.IO |
 | Database | MongoDB (Mongoose) |
 | Auth | bcrypt |
-| Calls | react-native-webrtc (pending native build) |
+| Media | Cloudinary (image uploads) |
+| Calls | react-native-webrtc (requires dev build) |
 
 ---
 
@@ -40,6 +46,9 @@ Create a `.env` file inside `backend/`:
 ```
 MONGO_URI=mongodb://localhost:27017/nexly
 PORT=5000
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
 ```
 
 ```bash
